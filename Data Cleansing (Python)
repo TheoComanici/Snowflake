@@ -1,0 +1,20 @@
+import pandas as pd
+order=pd.read_csv('Order.csv')
+order.head()
+
+order['Order Shipping Country']=order['Order Shipping Country'].str.replace(',',' ')
+
+from datetime import datetime
+order['Order Date']=pd.to_datetime(order['Order Date'])
+
+order.dtypes
+OrderNew=pd.DataFrame(order)
+OrderNew.to_csv (r'OrderClean.csv', index = False, header=True)
+
+customer=pd.read_csv('Customer.csv')
+customer.head()
+customer['Billing City']=customer['Billing City'].str.replace(',',' ')
+customer['Billing Country']=customer['Billing Country'].str.replace(',',' ')
+customer['Email Opt In']=customer['Email Opt In'].str.replace('X','')
+CustomerNew=pd.DataFrame(customer)
+CustomerNew.to_csv (r'CustomerClean.csv', index = False, header=True)
