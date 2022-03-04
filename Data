@@ -1,0 +1,138 @@
+#creating customer table
+CREATE TABLE customer (
+CustomerID int,
+  Billing_City varchar,
+  Billing_Country varchar,
+  Gender varchar,
+  Date_of_Birth date,
+  Creation_Date date,
+  First_Order_Date date,
+  Email_Opt_In boolean);
+
+
+#creating item table
+CREATE TABLE item (
+Item_SKU varchar,
+  Size varchar,
+  Colour varchar,
+  Gender varchar,
+  Product_Category varchar,
+  Product_Description varchar);
+
+
+#creating order_item table
+CREATE TABLE order_item (
+order_number varchar,
+  CustomerID int,
+  Item_Quantity int,
+  Item_SKU varchar,
+  Item_Subtotal float,
+  Item_Discount_GBP float,
+  Item_Gross_Total_GBP float,
+  Item_Tax_Value_GBP float,
+  Item_Net_Total_GBP float);
+  
+
+#creating table for order details
+CREATE TABLE Order_details (
+order_number varchar,
+  CustomerID int,
+  Sales_Channel varchar,
+  order_date date,
+  order_shipping_country varchar,
+  order_items_gross float,
+  order_shipping_gross_GBP float,
+  order_gross_total_GBP float,
+  order_net_total_GBP float,
+  order_status varchar,
+  order_shipping_service varchar,
+  order_discount_code varchar);
+
+#joining customer and order_item table
+SELECT DISTINCT customer.CustomerID, customer.Billing_City, customer.Billing_Country, order_item.Item_Tax_Value_GBP FROM customer
+INNER JOIN order_item on customer.CustomerID= order_item.CustomerID;
+
+#joining customer and order_details table
+SELECT order_details.CustomerID, order_details.Sales_Channel, customer.Billing_City, order_details.order_shipping_country, order_details.order_status
+FROM order_details
+LEFT JOIN customer on order_details.CustomerID= customer.CustomerID;
+
+#joining item and order_item table
+SELECT item.item_SKU, item.Size, item.colour, item.Product_Description, order_item.Item_Subtotal, order_item.Item_Discount_GBP, order_item.Item_Net_Total_GBP
+FROM item
+LEFT JOIN order_item on item.item_SKU= order_item.item_SKU;
+
+#joining order_item and order_details table
+SELECT order_details.order_number, order_details.CustomerID, order_details.order_date, order_details.order_items_gross, order_item.item_quantity,
+order_item.item_SKU, order_item.item_Gross_Total_GBP, order_details.order_discount_code
+FROM order_item
+RIGHT JOIN order_details on order_item.order_number=order_details.order_number;
+
+#verifying period between account creation date, first order and current order
+SELECT DISTINCT customer.CustomerID, customer.Creation_Date, customer.First_Order_Date, order_details.order_date
+FROM customer
+LEFT JOIN order_details on customer.CustomerID=order_details.CustomerID;
+
+#viewing highest spenders in European countries
+SELECT order_details.order_shipping_country, MAX(order_details.order_gross_total_GBP) max_order_gross_value
+FROM order_details
+WHERE order_shipping_country IN ('United Kingdom', 'Germany', 'France', 'Switzerland', 'Ireland', 'Sweden', 'Denmark', 'Italy', 'Spain')
+GROUP BY order_shipping_country
+ORDER BY order_shipping_country;
+
+#deriving total tax incurred for all items
+SELECT SUM(order_item.Item_Tax_Value_GBP) total_tax FROM order_item;                   
+
+#average item subtotal per product category
+SELECT item.Product_Category, ROUND(AVG(order_item.Item_Subtotal),2) avg_item_subtotal
+FROM item
+JOIN order_item on item.item_SKU=order_item.item_SKU
+GROUP BY Product_Category;
+
+#number of orders per billing country
+SELECT customer.Billing_Country, COUNT(order_details.order_number) no_of_orders
+FROM customer
+JOIN order_details on customer.CustomerID=order_details.CustomerID
+GROUP BY Billing_Country
+ORDER BY Billing_Country;
+
+#number of orders above £100 per billing country
+SELECT customer.Billing_Country, COUNT(order_details.order_number) no_of_orders
+FROM customer
+JOIN order_details on customer.CustomerID=order_details.CustomerID
+AND order_details.order_items_gross>100
+GROUP BY Billing_Country
+ORDER BY Billing_Country;
+
+#number of orders where more than 2 items were bought
+SELECT order_details.order_shipping_country, COUNT(order_item.order_number) no_of_large_orders 
+FROM order_details
+JOIN order_item on order_details.order_number=order_item.order_number
+WHERE order_item.item_quantity>2
+GROUP BY order_shipping_country;
+
+#number of orders below £50 in the final quarter of 2018
+SELECT order_details.order_shipping_country, COUNT(order_details.order_number) no_of_orders_below_50
+FROM order_details
+WHERE order_details.order_date BETWEEN '2018-10-01' AND '2018-12-31'
+AND order_details.order_items_gross <50
+GROUP BY order_shipping_country
+ORDER BY order_shipping_country;
+
+#orders by shipping country 
+SELECT order_details.order_shipping_country, COUNT(order_details.order_status) No_of_Orders
+FROM order_details
+GROUP BY order_shipping_country
+ORDER BY order_shipping_country;
+
+#order status
+SELECT order_details.order_status, COUNT(order_details.order_status) Orders_by_Status
+FROM order_details
+GROUP BY order_status
+ORDER BY order_status;
+
+
+#replacing lowercase with uppercase letter
+SELECT REPLACE(order_details.order_status,'billed', 'Billed') FROM order_details;
+SELECT REPLACE(order_details.order_status,'fulfilled', 'Fulfilled') FROM order_details;
+SELECT REPLACE(order_details.order_status,'unfulfilled', 'Unfulfilled') FROM order_details;
